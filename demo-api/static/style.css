@@ -54,8 +54,28 @@ li {
 
 .buttons {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
     margin: 20px 0;
+}
+
+form {
+    display: flex;
+    gap: 10px;
+}
+
+input[type="search"] {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 11px 14px;
+    font-size: 15px;
+}
+
+.hint {
+    color: #6b7280;
+    font-size: 14px;
 }
 
 button {
@@ -113,8 +133,9 @@ pre.failure {
 
 .architecture {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     align-items: center;
+    justify-content: center;
     gap: 8px;
 
     padding: 20px;

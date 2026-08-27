@@ -1,20 +1,57 @@
-from fastapi import FastAPI, HTTPException
-from prometheus_fastapi_instrumentator import Instrumentator
 import asyncio
 import os
+import random
+
+from fastapi import FastAPI, HTTPException, Query
+from prometheus_fastapi_instrumentator import Instrumentator
 
 
-app = FastAPI()
+app = FastAPI(title="Product Search Backend API")
 Instrumentator().instrument(app).expose(app)
 
 
+PRODUCTS = [
+    {"id": 1, "name": "ノートパソコン"},
+    {"id": 2, "name": "ワイヤレスイヤホン"},
+    {"id": 3, "name": "スマートフォン"},
+    {"id": 4, "name": "メカニカルキーボード"},
+    {"id": 5, "name": "4Kモニター"},
+]
+
+
+async def search_products(query: str) -> list[dict[str, int | str]]:
+    if query == "slow":
+        await asyncio.sleep(3)
+        query = ""
+    elif query == "error":
+        raise HTTPException(status_code=500, detail="Intentional backend error")
+    elif query == "random":
+        scenario = random.choice(["normal", "slow", "error"])
+        if scenario == "slow":
+            await asyncio.sleep(3)
+        elif scenario == "error":
+            raise HTTPException(status_code=500, detail="Random backend error")
+        query = ""
+
+    normalized_query = query.casefold().strip()
+    if not normalized_query:
+        return PRODUCTS
+
+    return [
+        product
+        for product in PRODUCTS
+        if normalized_query in str(product["name"]).casefold()
+    ]
+
+
 @app.get("/")
-def root():
-    return {
-        "service": "backend-api",
-        "pod": os.getenv("HOSTNAME"),
-        "message": "Hello from backend-api!"
-    }
+async def root():
+    return {"service": "backend-api", "message": "Product search backend"}
+
+
+@app.get("/search")
+async def search(q: str = Query(default="", description="商品名の検索キーワード")):
+    return await search_products(q)
 
 
 @app.get("/health")
@@ -22,25 +59,5 @@ def health():
     return {
         "service": "backend-api",
         "status": "ok",
-        "pod": os.getenv("HOSTNAME")
-    }
-
-
-@app.get("/timeout")
-async def timeout():
-    # 意図的に10秒待つ
-    await asyncio.sleep(10)
-
-    return {
-        "service": "backend-api",
         "pod": os.getenv("HOSTNAME"),
-        "message": "This should not be reached by demo-api"
     }
-
-
-@app.get("/error")
-def error():
-    raise HTTPException(
-        status_code=500,
-        detail="Intentional internal server error"
-    )

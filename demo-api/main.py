@@ -1,13 +1,15 @@
 import os
-import random
 
 import requests
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from prometheus_fastapi_instrumentator import Instrumentator
 
-app = FastAPI()
+
+app = FastAPI(title="Product Search Observability Demo")
 Instrumentator().instrument(app).expose(app)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 BACKEND_API_URL = "http://backend-api:8000"
@@ -17,176 +19,93 @@ BACKEND_API_URL = "http://backend-api:8000"
 def index():
     return """
     <!DOCTYPE html>
-    <html>
+    <html lang="ja">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>プレゼンテーション Demo</title>
-
+        <title>商品検索 Observability Demo</title>
         <link rel="stylesheet" href="/static/style.css">
     </head>
-
     <body>
-
         <main class="container">
-
             <header>
-                <h1>Observability Demo</h1>
-                <p class="subtitle">
-                    FastAPI + Kubernetes + Prometheus + Grafana
-                </p>
+                <h1>商品検索 Observability Demo</h1>
+                <p class="subtitle">FastAPI + Kubernetes + Prometheus + Grafana</p>
             </header>
 
-            <section class="card">
-                <h2>概要</h2>
-
+            <section class="card intro">
+                <h2>このデモについて</h2>
                 <p>
-                    これはデモアプリです。ローカルにkubernetes環境を立ち上げ、そこにデプロイされています。
-                    他にもバックエンドAPIがデプロイされており、
-                    can be observed using metrics.
+                    シンプルな商品検索を通じて、アプリケーションのリクエストが
+                    Prometheusに記録され、Grafanaで可視化される流れを確認できます。
                 </p>
-
-                <ul>
-                    <li>
-                        <strong>Normal</strong>
-                        — Successful request
-                    </li>
-                    <li>
-                        <strong>Timeout</strong>
-                        — Backend intentionally delays the response
-                    </li>
-                    <li>
-                        <strong>Error</strong>
-                        — Backend intentionally returns HTTP 500
-                    </li>
-                    <li>
-                        <strong>Random</strong>
-                        — Randomly triggers one of the above scenarios
-                    </li>
-                </ul>
-            </section>
-
-
-            <section class="card">
-
-                <h2>API Demo</h2>
-
-                <div class="buttons">
-
-                    <button
-                        class="normal"
-                        onclick="callApi('normal')">
-                        Normal
-                    </button>
-
-                    <button
-                        class="timeout"
-                        onclick="callApi('timeout')">
-                        Timeout
-                    </button>
-
-                    <button
-                        class="error"
-                        onclick="callApi('error')">
-                        Error
-                    </button>
-
-                    <button
-                        class="random"
-                        onclick="callApi('random')">
-                        Random
-                    </button>
-
-                </div>
-
-                <h3>Response</h3>
-
-                <pre id="result">-</pre>
-
-            </section>
-
-
-            <section class="card">
-
-                <h2>Architecture</h2>
-
                 <div class="architecture">
-
-                    <div class="service">
-                        Browser
-                    </div>
-
-                    <div class="arrow">↓</div>
-
-                    <div class="service">
-                        demo-api
-                    </div>
-
-                    <div class="arrow">↓</div>
-
-                    <div class="service">
-                        backend-api
-                    </div>
-
-                    <div class="arrow">↓</div>
-
-                    <div class="service">
-                        Prometheus / Grafana
-                    </div>
-
+                    <span class="service">Browser</span><span class="arrow">→</span>
+                    <span class="service">demo-api</span><span class="arrow">→</span>
+                    <span class="service">backend-api</span><span class="arrow">→</span>
+                    <span class="service">Prometheus / Grafana</span>
                 </div>
-
             </section>
 
+            <section class="card">
+                <h2>商品を検索</h2>
+                <form id="search-form">
+                    <input id="query" type="search" placeholder="例: モニター" autocomplete="off">
+                    <button class="normal" type="submit">検索</button>
+                </form>
+                <div class="buttons">
+                    <button class="timeout" type="button" onclick="runScenario('遅延')">遅延を再現</button>
+                    <button class="error" type="button" onclick="runScenario('エラー')">エラーを再現</button>
+                    <button class="random" type="button" onclick="runScenario('ランダム')">ランダム障害</button>
+                </div>
+                <p class="hint">障害ボタンはbackend-apiの遅延・500エラーを発生させ、Grafanaのメトリクス変化を確認するためのものです。</p>
+                <h3>検索結果</h3>
+                <pre id="result">検索キーワードを入力してください。</pre>
+            </section>
+
+            <section class="card observability">
+                <h2>Grafanaで見るポイント</h2>
+                <ul>
+                    <li>リクエスト数とHTTPステータスコード</li>
+                    <li>遅延発生時のレスポンスタイム</li>
+                    <li>demo-apiからbackend-apiへ伝播する障害</li>
+                </ul>
+                <p>Prometheusの <code>/metrics</code> をServiceMonitorが収集しています。</p>
+            </section>
         </main>
 
-
         <script>
+            const form = document.getElementById("search-form");
+            const query = document.getElementById("query");
+            const result = document.getElementById("result");
 
-            async function callApi(type) {
+            form.addEventListener("submit", (event) => {
+                event.preventDefault();
+                search(query.value);
+            });
 
-                const result =
-                    document.getElementById("result");
+            function runScenario(value) {
+                query.value = value;
+                search(value);
+            }
 
-                result.textContent = "Loading...";
+            async function search(value) {
                 result.className = "";
-
+                result.textContent = "検索中...";
                 try {
-
-                    const response =
-                        await fetch("/backend?type=" + type);
-
-                    const text =
-                        await response.text();
-
-                    result.textContent =
-                        "HTTP " +
-                        response.status +
-                        "\\n\\n" +
-                        text;
-
-                    if (response.ok) {
-                        result.classList.add("success");
-                    } else {
-                        result.classList.add("failure");
-                    }
-
+                    const response = await fetch("/search?q=" + encodeURIComponent(value));
+                    const body = await response.text();
+                    result.textContent = "HTTP " + response.status + "\n\n" + body;
+                    result.classList.add(response.ok ? "success" : "failure");
                 } catch (error) {
-
-                    result.textContent =
-                        "Request failed:\\n\\n" +
-                        error;
-
+                    result.textContent = "Request failed:\n\n" + error;
                     result.classList.add("failure");
                 }
             }
-
         </script>
-
     </body>
     </html>
     """
-
 
 
 @app.get("/health")
@@ -194,56 +113,21 @@ def health():
     return {
         "service": "demo-api",
         "status": "ok",
-        "pod": os.getenv("HOSTNAME")
+        "pod": os.getenv("HOSTNAME"),
     }
 
 
-@app.get("/backend")
-def backend(type: str = "normal"):
-    if type == "normal":
-        path = "/"
-
-    elif type == "timeout":
-        path = "/timeout"
-
-    elif type == "error":
-        path = "/error"
-
-    elif type == "random":
-        path = random.choice([
-            "/",
-            "/timeout",
-            "/error",
-        ])
-
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unknown type: {type}"
-        )
-
+@app.get("/search")
+def search(q: str = Query(default="", description="商品名の検索キーワード")):
     try:
         response = requests.get(
-            f"{BACKEND_API_URL}{path}",
-            timeout=0.5
+            f"{BACKEND_API_URL}/search",
+            params={"q": q},
+            timeout=1.0,
         )
-
         response.raise_for_status()
-
-        return {
-            "service": "demo-api",
-            "pod": os.getenv("HOSTNAME"),
-            "backend": response.json()
-        }
-
+        return response.json()
     except requests.Timeout:
-        raise HTTPException(
-            status_code=504,
-            detail="backend-api request timed out"
-        )
-
-    except requests.RequestException as e:
-        raise HTTPException(
-            status_code=502,
-            detail=f"backend-api request failed: {str(e)}"
-        )
+        raise HTTPException(status_code=504, detail="backend-api request timed out")
+    except requests.RequestException as error:
+        raise HTTPException(status_code=502, detail=f"backend-api request failed: {error}")
