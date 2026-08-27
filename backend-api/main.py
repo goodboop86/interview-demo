@@ -20,12 +20,12 @@ PRODUCTS = [
 
 
 async def search_products(query: str) -> list[dict[str, int | str]]:
-    if query == "slow":
+    if query == "遅延":
         await asyncio.sleep(3)
         query = ""
-    elif query == "error":
+    elif query == "エラー":
         raise HTTPException(status_code=500, detail="Intentional backend error")
-    elif query == "random":
+    elif query == "ランダム":
         scenario = random.choice(["normal", "slow", "error"])
         if scenario == "slow":
             await asyncio.sleep(3)

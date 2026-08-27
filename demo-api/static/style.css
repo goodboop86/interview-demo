@@ -59,7 +59,7 @@ li {
     margin: 20px 0;
 }
 
-form {
+.search-controls {
     display: flex;
     gap: 10px;
 }

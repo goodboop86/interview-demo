@@ -49,10 +49,10 @@ def index():
 
             <section class="card">
                 <h2>商品を検索</h2>
-                <form id="search-form">
+                <div class="search-controls">
                     <input id="query" type="search" placeholder="例: モニター" autocomplete="off">
-                    <button class="normal" type="submit">検索</button>
-                </form>
+                    <button class="normal" type="button" id="search-button">検索</button>
+                </div>
                 <div class="buttons">
                     <button class="timeout" type="button" onclick="runScenario('遅延')">遅延を再現</button>
                     <button class="error" type="button" onclick="runScenario('エラー')">エラーを再現</button>
@@ -75,13 +75,19 @@ def index():
         </main>
 
         <script>
-            const form = document.getElementById("search-form");
             const query = document.getElementById("query");
             const result = document.getElementById("result");
+            const searchButton = document.getElementById("search-button");
 
-            form.addEventListener("submit", (event) => {
-                event.preventDefault();
+            searchButton.addEventListener("click", () => {
                 search(query.value);
+            });
+
+            query.addEventListener("keydown", (event) => {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    search(query.value);
+                }
             });
 
             function runScenario(value) {
@@ -95,10 +101,10 @@ def index():
                 try {
                     const response = await fetch("/search?q=" + encodeURIComponent(value));
                     const body = await response.text();
-                    result.textContent = "HTTP " + response.status + "\n\n" + body;
+                    result.textContent = "HTTP " + response.status + "\\n\\n" + body;
                     result.classList.add(response.ok ? "success" : "failure");
                 } catch (error) {
-                    result.textContent = "Request failed:\n\n" + error;
+                    result.textContent = "Request failed:\\n\\n" + error;
                     result.classList.add("failure");
                 }
             }
