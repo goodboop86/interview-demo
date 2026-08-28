@@ -39,17 +39,18 @@ helm install monitoring prometheus-community/kube-prometheus-stack \
 kubens monitoring
 ```
 
-## デプロイ
+
+### カスタムダッシュボード
+
+```
+kubectl create configmap dashboard-demo --from-file=monitoring/dashboard-demo.json -n monitoring
+kubectl label configmap dashboard-demo -n monitoring grafana_dashboard="1"
+```
+
+
+### imageの更新とdeployの更新
 
 ```shell
-kubectl apply -f deploy
-```
-
-
-## 公開
-
-
-```
-kubectl port-forward -n monitoring \
-  svc/monitoring-kube-prometheus-prometheus 9090:9090
+minikube image build -t backend-api:latest ./backend-api && minikube image build -t demo-api:latest ./demo-api && kubectl rollout restart deployment/backend-api deployment/demo-api -n demo && kubectl rollout status deployment/backend-api -n demo --timeout=120s && kubectl rollout status
+  │ deployment/demo-api -n demo --timeout=120s
 ```

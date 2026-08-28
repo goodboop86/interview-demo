@@ -1,4 +1,6 @@
-デモ用
+商品検索を題材にした、FastAPI + Kubernetes + Prometheus + Grafanaのオブザーバビリティデモです。
+
+構成の詳細は[アーキテクチャドキュメント](ARCHITECTURE.md)を参照してください。
 
 see: https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack
 
@@ -6,7 +8,7 @@ see: https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-p
 ### API
 
 ```shell
-kubectl port-forward svc/demo-api 8000:8000
+kubectl port-forward -n demo svc/demo-api 8000:8000
 ```
 
 

@@ -78,6 +78,20 @@ input[type="search"] {
     font-size: 14px;
 }
 
+.shutdown-status {
+    min-height: 20px;
+    color: #991b1b;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.load-status {
+    min-height: 20px;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 600;
+}
+
 button {
     border: none;
     border-radius: 6px;
@@ -94,6 +108,11 @@ button:hover {
     opacity: 0.85;
 }
 
+button:disabled {
+    cursor: wait;
+    opacity: 0.55;
+}
+
 button.normal {
     background: #2563eb;
 }
@@ -108,6 +127,10 @@ button.error {
 
 button.random {
     background: #7c3aed;
+}
+
+button.shutdown {
+    background: #991b1b;
 }
 
 pre {
@@ -131,27 +154,139 @@ pre.failure {
     border-left: 4px solid #ef4444;
 }
 
-.architecture {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-
-    padding: 20px;
+.diagram-lead {
+    margin-top: -8px;
+    color: #6b7280;
 }
 
-.service {
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-
-    padding: 12px 30px;
-
+.architecture-diagram {
+    padding: 18px 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
     background: #f9fafb;
+}
+
+.diagram-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.diagram-node {
+    display: flex;
+    min-width: 145px;
+    min-height: 78px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 12px;
+    border: 2px solid #93c5fd;
+    border-radius: 8px;
+    background: #eff6ff;
+    text-align: center;
+}
+
+.diagram-node small {
+    color: #4b5563;
+    font-size: 12px;
+}
+
+.user-node {
+    border-color: #c4b5fd;
+    background: #f5f3ff;
+}
+
+.data-node {
+    border-color: #86efac;
+    background: #f0fdf4;
+}
+
+.metrics-node {
+    border-color: #fcd34d;
+    background: #fffbeb;
+}
+
+.grafana-node {
+    border-color: #fdba74;
+    background: #fff7ed;
+}
+
+.node-icon {
+    font-size: 20px;
+}
+
+.diagram-arrow {
+    color: #6b7280;
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.metrics-label {
+    width: fit-content;
+    margin: 22px auto 10px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: #e5e7eb;
+    color: #4b5563;
+    font-size: 13px;
     font-weight: 600;
 }
 
-.arrow {
-    font-size: 24px;
+.metrics-flow {
+    gap: 12px;
+}
+
+.metric-source {
+    min-width: 90px;
     color: #6b7280;
+    font-size: 13px;
+    text-align: center;
+}
+
+.metric-source small {
+    font-size: 11px;
+}
+
+.metrics-arrow {
+    font-size: 24px;
+}
+
+.diagram-note {
+    margin-top: 18px;
+    padding: 12px 14px;
+    border-left: 4px solid #f59e0b;
+    background: #fffbeb;
+    color: #4b5563;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.recovery-note {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-left: 4px solid #dc2626;
+    background: #fef2f2;
+    color: #4b5563;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+    .diagram-row {
+        flex-direction: column;
+    }
+
+    .diagram-arrow {
+        transform: rotate(90deg);
+    }
+
+    .metrics-label {
+        margin-top: 18px;
+    }
+
+    .metric-source {
+        margin-bottom: -4px;
+    }
 }

@@ -2,13 +2,13 @@ import os
 
 import requests
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from prometheus_fastapi_instrumentator import Instrumentator
 
 
 app = FastAPI(title="Product Search Observability Demo")
-Instrumentator().instrument(app).expose(app)
+Instrumentator(should_group_status_codes=False).instrument(app).expose(app)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
@@ -39,12 +39,6 @@ def index():
                     シンプルな商品検索を通じて、アプリケーションのリクエストが
                     Prometheusに記録され、Grafanaで可視化される流れを確認できます。
                 </p>
-                <div class="architecture">
-                    <span class="service">Browser</span><span class="arrow">→</span>
-                    <span class="service">demo-api</span><span class="arrow">→</span>
-                    <span class="service">backend-api</span><span class="arrow">→</span>
-                    <span class="service">Prometheus / Grafana</span>
-                </div>
             </section>
 
             <section class="card">
@@ -56,21 +50,75 @@ def index():
                 <div class="buttons">
                     <button class="timeout" type="button" onclick="runScenario('遅延')">遅延を再現</button>
                     <button class="error" type="button" onclick="runScenario('エラー')">エラーを再現</button>
-                    <button class="random" type="button" onclick="runScenario('ランダム')">ランダム障害</button>
+                    <button class="random" type="button" id="load-test-button">1分間ランダム負荷</button>
+                    <button class="shutdown" type="button" id="shutdown-button">backend-apiを1台停止</button>
                 </div>
-                <p class="hint">障害ボタンはbackend-apiの遅延・500エラーを発生させ、Grafanaのメトリクス変化を確認するためのものです。</p>
+                <p class="hint">負荷テストは約10RPSで、正常・遅延・エラーの検索をランダムに1分間実行します。Grafanaのメトリクス変化を確認してください。</p>
+                <p id="load-test-status" class="load-status" aria-live="polite"></p>
+                <p id="shutdown-status" class="shutdown-status" aria-live="polite"></p>
                 <h3>検索結果</h3>
                 <pre id="result">検索キーワードを入力してください。</pre>
             </section>
 
-            <section class="card observability">
-                <h2>Grafanaで見るポイント</h2>
-                <ul>
-                    <li>リクエスト数とHTTPステータスコード</li>
-                    <li>遅延発生時のレスポンスタイム</li>
-                    <li>demo-apiからbackend-apiへ伝播する障害</li>
-                </ul>
-                <p>Prometheusの <code>/metrics</code> をServiceMonitorが収集しています。</p>
+            <section class="card architecture-card">
+                <h2>今回の仕組み</h2>
+                <p class="diagram-lead">検索の流れと、裏側でデータを集める流れを図にしています。</p>
+
+                <div class="architecture-diagram" aria-label="システムアーキテクチャ図">
+                    <div class="diagram-row request-flow">
+                        <div class="diagram-node user-node">
+                            <span class="node-icon">👤</span>
+                            <strong>利用者</strong>
+                            <small>ブラウザで検索</small>
+                        </div>
+                        <span class="diagram-arrow">→</span>
+                        <div class="diagram-node app-node">
+                            <strong>demo-api</strong>
+                            <small>画面表示・検索受付</small>
+                        </div>
+                        <span class="diagram-arrow">→</span>
+                        <div class="diagram-node app-node">
+                            <strong>backend-api</strong>
+                            <small>商品を検索</small>
+                        </div>
+                        <span class="diagram-arrow">→</span>
+                        <div class="diagram-node data-node">
+                            <span class="node-icon">📦</span>
+                            <strong>商品データ</strong>
+                            <small>アプリ内メモリ</small>
+                        </div>
+                    </div>
+
+                    <div class="metrics-label">アクセス状況を記録</div>
+                    <div class="diagram-row metrics-flow">
+                        <div class="metric-source">demo-api<br><small>backend-api</small></div>
+                        <span class="diagram-arrow metrics-arrow">↓</span>
+                        <div class="diagram-node metrics-node">
+                            <strong>ServiceMonitor</strong>
+                            <small>定期的に計測データを収集</small>
+                        </div>
+                        <span class="diagram-arrow">→</span>
+                        <div class="diagram-node metrics-node">
+                            <strong>Prometheus</strong>
+                            <small>計測データを保存</small>
+                        </div>
+                        <span class="diagram-arrow">→</span>
+                        <div class="diagram-node grafana-node">
+                            <strong>Grafana</strong>
+                            <small>グラフで見える化</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="diagram-note">
+                    <strong>デモで起こせること：</strong>
+                    通常の検索、わざと起こす遅延・エラー、1分間のランダム負荷を実行すると、
+                    Prometheusに記録された変化をGrafanaで確認できます。
+                </div>
+                <div class="recovery-note">
+                    <strong>自己修復のデモ：</strong>
+                    「backend-apiを1台停止」を押すとPodが終了します。KubernetesのDeploymentが不足したPodを自動で作り直し、検索が復旧します。
+                </div>
             </section>
         </main>
 
@@ -78,10 +126,21 @@ def index():
             const query = document.getElementById("query");
             const result = document.getElementById("result");
             const searchButton = document.getElementById("search-button");
+            const loadTestButton = document.getElementById("load-test-button");
+            const loadTestStatus = document.getElementById("load-test-status");
+            const shutdownButton = document.getElementById("shutdown-button");
+            const shutdownStatus = document.getElementById("shutdown-status");
+            let loadTestTimer = null;
+            let loadTestEnd = 0;
+            let loadTestSent = 0;
+            let loadTestCompleted = 0;
 
             searchButton.addEventListener("click", () => {
                 search(query.value);
             });
+
+            loadTestButton.addEventListener("click", startLoadTest);
+            shutdownButton.addEventListener("click", shutdownBackend);
 
             query.addEventListener("keydown", (event) => {
                 if (event.key === "Enter") {
@@ -93,6 +152,67 @@ def index():
             function runScenario(value) {
                 query.value = value;
                 search(value);
+            }
+
+            function startLoadTest() {
+                if (loadTestTimer !== null) {
+                    return;
+                }
+
+                const duration = 60 * 1000;
+                const interval = 50;
+                loadTestEnd = Date.now() + duration;
+                loadTestSent = 0;
+                loadTestCompleted = 0;
+                loadTestButton.disabled = true;
+                loadTestStatus.textContent = "負荷テスト実行中: 約20 RPS / 残り60秒";
+
+                loadTestTimer = setInterval(() => {
+                    if (Date.now() >= loadTestEnd) {
+                        stopLoadTest();
+                        return;
+                    }
+
+                    const scenarios = ["", "遅延", "エラー"];
+                    const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+                    loadTestSent += 1;
+                    sendLoadRequest(scenario);
+
+                    const remaining = Math.ceil((loadTestEnd - Date.now()) / 1000);
+                    loadTestStatus.textContent =
+                        "負荷テスト実行中: 約10 RPS / 残り" + remaining + "秒 / 送信" + loadTestSent + "件";
+                }, interval);
+            }
+
+            function stopLoadTest() {
+                clearInterval(loadTestTimer);
+                loadTestTimer = null;
+                loadTestButton.disabled = false;
+                loadTestStatus.textContent =
+                    "負荷テスト完了: " + loadTestSent + "件送信 / " + loadTestCompleted + "件応答";
+            }
+
+            async function sendLoadRequest(value) {
+                try {
+                    await fetch("/search?q=" + encodeURIComponent(value));
+                } catch (error) {
+                    // 負荷生成中の個別リクエスト失敗は、次のリクエストを止めない。
+                } finally {
+                    loadTestCompleted += 1;
+                }
+            }
+
+            async function shutdownBackend() {
+                shutdownButton.disabled = true;
+                shutdownStatus.textContent = "backend-apiを停止しています...";
+                try {
+                    const response = await fetch("/shutdown", {method: "POST"});
+                    const body = await response.json();
+                    shutdownStatus.textContent = body.message;
+                } catch (error) {
+                    shutdownStatus.textContent =
+                        "停止リクエストを送信しました。KubernetesがPodを再作成するまで少し待ってください。";
+                }
             }
 
             async function search(value) {
@@ -137,3 +257,18 @@ def search(q: str = Query(default="", description="商品名の検索キーワ�
         raise HTTPException(status_code=504, detail="backend-api request timed out")
     except requests.RequestException as error:
         raise HTTPException(status_code=502, detail=f"backend-api request failed: {error}")
+
+
+@app.post("/shutdown")
+def shutdown():
+    try:
+        requests.post(f"{BACKEND_API_URL}/shutdown", timeout=1.0)
+    except requests.RequestException:
+        pass
+
+    return JSONResponse(
+        status_code=202,
+        content={
+            "message": "停止リクエストを送信しました。KubernetesがPodを再作成します。",
+        },
+    )
