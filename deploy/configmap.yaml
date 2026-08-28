@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-dashboard-cm
+  namespace: monitoring # Grafanaと同じNamespace
+  labels:
+    grafana_dashboard: "1" # 監視用ラベル
+data:
+  my-dashboard.json: |-
+    {
+      ... (ここにJSONの中身) ...
+    }

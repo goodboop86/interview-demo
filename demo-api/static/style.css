@@ -1,0 +1,292 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    background: #f5f7fa;
+    color: #1f2937;
+}
+
+.container {
+    max-width: 900px;
+    margin: 50px auto;
+    padding: 0 20px;
+}
+
+header {
+    margin-bottom: 30px;
+}
+
+h1 {
+    margin-bottom: 5px;
+    font-size: 32px;
+}
+
+.subtitle {
+    margin-top: 0;
+    color: #6b7280;
+}
+
+.card {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    margin-bottom: 20px;
+
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.card h2 {
+    margin-top: 0;
+}
+
+li {
+    margin: 8px 0;
+}
+
+.buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.search-controls {
+    display: flex;
+    gap: 10px;
+}
+
+input[type="search"] {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 11px 14px;
+    font-size: 15px;
+}
+
+.hint {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.shutdown-status {
+    min-height: 20px;
+    color: #991b1b;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.load-status {
+    min-height: 20px;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+button {
+    border: none;
+    border-radius: 6px;
+    padding: 11px 22px;
+
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+button:hover {
+    opacity: 0.85;
+}
+
+button:disabled {
+    cursor: wait;
+    opacity: 0.55;
+}
+
+button.normal {
+    background: #2563eb;
+}
+
+button.timeout {
+    background: #d97706;
+}
+
+button.error {
+    background: #dc2626;
+}
+
+button.random {
+    background: #7c3aed;
+}
+
+button.shutdown {
+    background: #991b1b;
+}
+
+pre {
+    background: #111827;
+    color: #e5e7eb;
+
+    padding: 20px;
+    border-radius: 6px;
+
+    min-height: 120px;
+    overflow-x: auto;
+
+    font-family: monospace;
+}
+
+pre.success {
+    border-left: 4px solid #22c55e;
+}
+
+pre.failure {
+    border-left: 4px solid #ef4444;
+}
+
+.diagram-lead {
+    margin-top: -8px;
+    color: #6b7280;
+}
+
+.architecture-diagram {
+    padding: 18px 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f9fafb;
+}
+
+.diagram-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.diagram-node {
+    display: flex;
+    min-width: 145px;
+    min-height: 78px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 12px;
+    border: 2px solid #93c5fd;
+    border-radius: 8px;
+    background: #eff6ff;
+    text-align: center;
+}
+
+.diagram-node small {
+    color: #4b5563;
+    font-size: 12px;
+}
+
+.user-node {
+    border-color: #c4b5fd;
+    background: #f5f3ff;
+}
+
+.data-node {
+    border-color: #86efac;
+    background: #f0fdf4;
+}
+
+.metrics-node {
+    border-color: #fcd34d;
+    background: #fffbeb;
+}
+
+.grafana-node {
+    border-color: #fdba74;
+    background: #fff7ed;
+}
+
+.node-icon {
+    font-size: 20px;
+}
+
+.diagram-arrow {
+    color: #6b7280;
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.metrics-label {
+    width: fit-content;
+    margin: 22px auto 10px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: #e5e7eb;
+    color: #4b5563;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.metrics-flow {
+    gap: 12px;
+}
+
+.metric-source {
+    min-width: 90px;
+    color: #6b7280;
+    font-size: 13px;
+    text-align: center;
+}
+
+.metric-source small {
+    font-size: 11px;
+}
+
+.metrics-arrow {
+    font-size: 24px;
+}
+
+.diagram-note {
+    margin-top: 18px;
+    padding: 12px 14px;
+    border-left: 4px solid #f59e0b;
+    background: #fffbeb;
+    color: #4b5563;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.recovery-note {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-left: 4px solid #dc2626;
+    background: #fef2f2;
+    color: #4b5563;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+    .diagram-row {
+        flex-direction: column;
+    }
+
+    .diagram-arrow {
+        transform: rotate(90deg);
+    }
+
+    .metrics-label {
+        margin-top: 18px;
+    }
+
+    .metric-source {
+        margin-bottom: -4px;
+    }
+}
