@@ -23,21 +23,23 @@ def index():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>商品検索 Observability Demo</title>
+        <title>商品検索Demo</title>
         <link rel="stylesheet" href="/static/style.css">
     </head>
     <body>
         <main class="container">
             <header>
-                <h1>商品検索 Observability Demo</h1>
+                <h1>商品検索Demo</h1>
                 <p class="subtitle">FastAPI + Kubernetes + Prometheus + Grafana</p>
             </header>
 
             <section class="card intro">
                 <h2>このデモについて</h2>
                 <p>
-                    シンプルな商品検索を通じて、アプリケーションのリクエストが
-                    Prometheusに記録され、Grafanaで可視化される流れを確認できます。
+                    - シンプルな商品検索システムのデモです。
+                    - このシステムはローカルのkubernetes環境にデプロイされています
+                    - このデモで商品を検索すると、さらに裏側のAPIにリクエストを行い、マッチした商品を取得します。
+                    - これらの仕組みはPrometheusによりモニタリングされ、Grafanaにより可視化できます。
                 </p>
             </section>
 
@@ -50,75 +52,14 @@ def index():
                 <div class="buttons">
                     <button class="timeout" type="button" onclick="runScenario('遅延')">遅延を再現</button>
                     <button class="error" type="button" onclick="runScenario('エラー')">エラーを再現</button>
-                    <button class="random" type="button" id="load-test-button">1分間ランダム負荷</button>
+                    <button class="random" type="button" id="load-test-button">3分間ランダム負荷</button>
                     <button class="shutdown" type="button" id="shutdown-button">backend-apiを1台停止</button>
                 </div>
-                <p class="hint">負荷テストは約10RPSで、正常・遅延・エラーの検索をランダムに1分間実行します。Grafanaのメトリクス変化を確認してください。</p>
+                <p class="hint">負荷テストは約20RPSで、正常・遅延・エラーの検索をランダムに3分間実行します。</p>
                 <p id="load-test-status" class="load-status" aria-live="polite"></p>
                 <p id="shutdown-status" class="shutdown-status" aria-live="polite"></p>
                 <h3>検索結果</h3>
                 <pre id="result">検索キーワードを入力してください。</pre>
-            </section>
-
-            <section class="card architecture-card">
-                <h2>今回の仕組み</h2>
-                <p class="diagram-lead">検索の流れと、裏側でデータを集める流れを図にしています。</p>
-
-                <div class="architecture-diagram" aria-label="システムアーキテクチャ図">
-                    <div class="diagram-row request-flow">
-                        <div class="diagram-node user-node">
-                            <span class="node-icon">👤</span>
-                            <strong>利用者</strong>
-                            <small>ブラウザで検索</small>
-                        </div>
-                        <span class="diagram-arrow">→</span>
-                        <div class="diagram-node app-node">
-                            <strong>demo-api</strong>
-                            <small>画面表示・検索受付</small>
-                        </div>
-                        <span class="diagram-arrow">→</span>
-                        <div class="diagram-node app-node">
-                            <strong>backend-api</strong>
-                            <small>商品を検索</small>
-                        </div>
-                        <span class="diagram-arrow">→</span>
-                        <div class="diagram-node data-node">
-                            <span class="node-icon">📦</span>
-                            <strong>商品データ</strong>
-                            <small>アプリ内メモリ</small>
-                        </div>
-                    </div>
-
-                    <div class="metrics-label">アクセス状況を記録</div>
-                    <div class="diagram-row metrics-flow">
-                        <div class="metric-source">demo-api<br><small>backend-api</small></div>
-                        <span class="diagram-arrow metrics-arrow">↓</span>
-                        <div class="diagram-node metrics-node">
-                            <strong>ServiceMonitor</strong>
-                            <small>定期的に計測データを収集</small>
-                        </div>
-                        <span class="diagram-arrow">→</span>
-                        <div class="diagram-node metrics-node">
-                            <strong>Prometheus</strong>
-                            <small>計測データを保存</small>
-                        </div>
-                        <span class="diagram-arrow">→</span>
-                        <div class="diagram-node grafana-node">
-                            <strong>Grafana</strong>
-                            <small>グラフで見える化</small>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="diagram-note">
-                    <strong>デモで起こせること：</strong>
-                    通常の検索、わざと起こす遅延・エラー、1分間のランダム負荷を実行すると、
-                    Prometheusに記録された変化をGrafanaで確認できます。
-                </div>
-                <div class="recovery-note">
-                    <strong>自己修復のデモ：</strong>
-                    「backend-apiを1台停止」を押すとPodが終了します。KubernetesのDeploymentが不足したPodを自動で作り直し、検索が復旧します。
-                </div>
             </section>
         </main>
 
@@ -159,13 +100,13 @@ def index():
                     return;
                 }
 
-                const duration = 60 * 1000;
+                const duration = 180 * 1000;
                 const interval = 50;
                 loadTestEnd = Date.now() + duration;
                 loadTestSent = 0;
                 loadTestCompleted = 0;
                 loadTestButton.disabled = true;
-                loadTestStatus.textContent = "負荷テスト実行中: 約20 RPS / 残り60秒";
+                loadTestStatus.textContent = "負荷テスト実行中: 約20 RPS / 残り180秒";
 
                 loadTestTimer = setInterval(() => {
                     if (Date.now() >= loadTestEnd) {
@@ -180,7 +121,7 @@ def index():
 
                     const remaining = Math.ceil((loadTestEnd - Date.now()) / 1000);
                     loadTestStatus.textContent =
-                        "負荷テスト実行中: 約10 RPS / 残り" + remaining + "秒 / 送信" + loadTestSent + "件";
+                        "負荷テスト実行中: 約20 RPS / 残り" + remaining + "秒 / 送信" + loadTestSent + "件";
                 }, interval);
             }
 
