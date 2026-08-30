@@ -43,6 +43,7 @@ kubens monitoring
 ### カスタムダッシュボード
 
 ```
+kubectl delete configmap dashboard-demo -n monitoring
 kubectl create configmap dashboard-demo --from-file=monitoring/dashboard-demo.json -n monitoring
 kubectl label configmap dashboard-demo -n monitoring grafana_dashboard="1"
 ```
@@ -51,6 +52,5 @@ kubectl label configmap dashboard-demo -n monitoring grafana_dashboard="1"
 ### imageの更新とdeployの更新
 
 ```shell
-minikube image build -t backend-api:latest ./backend-api && minikube image build -t demo-api:latest ./demo-api && kubectl rollout restart deployment/backend-api deployment/demo-api -n demo && kubectl rollout status deployment/backend-api -n demo --timeout=120s && kubectl rollout status
-  │ deployment/demo-api -n demo --timeout=120s
+minikube image build -t backend-api:latest ./backend-api && minikube image build -t demo-api:latest ./demo-api && kubectl rollout restart deployment/backend-api deployment/demo-api -n demo && kubectl rollout status deployment/backend-api -n demo --timeout=120s && kubectl rollout status deployment/demo-api -n demo --timeout=120s
 ```
